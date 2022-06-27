@@ -1,0 +1,33 @@
+# the Filter for amabassador to use Keycloak do the auth for services
+---
+apiVersion: getambassador.io/v2
+kind: Filter
+metadata:
+  name: keycloak-filter
+  namespace: ambassador
+spec:
+  OAuth2:
+    authorizationURL: https://dev-k8s.treetracker.org/auth/realms/treetracker
+    audience: ambassador
+    clientID: ambassador
+    secret: 79fb79e9-9600-4168-80f7-cbf33dbcc0d7
+    protectedOrigins:
+    - origin: https://dev-k8s.treetracker.org
+
+
+---
+apiVersion: getambassador.io/v2
+kind: FilterPolicy
+metadata:
+  name: keycloak-filter-policy
+  namespace: ambassador
+spec:
+  rules:
+    - host: "*"
+      path: /web-map-site/*
+      filters:
+        - name: keycloak-filter
+          namespace: ambassador
+          arguments:
+            scopes:
+            - "offline_access"
