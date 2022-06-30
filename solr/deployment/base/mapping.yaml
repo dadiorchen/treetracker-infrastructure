@@ -1,0 +1,9 @@
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: treetracker-solr-mapping
+  namespace: webmap
+spec:
+  prefix: /search/
+  service: treetracker-solr-service
+  rewrite: /

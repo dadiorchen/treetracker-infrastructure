@@ -1,0 +1,5 @@
+resources:
+- treetracker-solr-deployment.yml
+- treetracker-solr-service.yml
+- namespace.yaml
+- mapping.yaml
