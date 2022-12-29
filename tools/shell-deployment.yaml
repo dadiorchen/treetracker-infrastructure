@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bastion 
+  namespace: default
+  labels:
+    app: bastion 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bastion
+  template:
+    metadata:
+      labels:
+        app: bastion
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: doks.digitalocean.com/node-pool
+                    operator: In
+                    values:
+                      - microservices-node-pool
+      containers:
+        - name: shell-node-tool
+          image: node:16.18.0
+          env:
+            - name: DATABASE_URL
+              value: not-set
+                #command: ["/bin/bash"]
+          command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+          tty: true
+          stdin: true
