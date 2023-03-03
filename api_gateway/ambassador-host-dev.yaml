@@ -1,0 +1,16 @@
+#ambassador k8s host for domain: next-dev.treetracker.org
+apiVersion: getambassador.io/v2
+kind: Host
+metadata:
+  name: ambassador-host-dev
+  namespace: ambassador
+spec:
+  acmeProvider:
+    authority: https://acme-v02.api.letsencrypt.org/directory
+    email: mckornfield@gmail.com
+    privateKeySecret:
+      name: https-3a-2f-2facme-2dv02.api.letsencrypt.org-2fdirectory--mckornfield-40gmail.com
+    registration: '{"body":{"status":"valid","contact":["mailto:mckornfield@gmail.com"]},"uri":"https://acme-v02.ap
+i.letsencrypt.org/acme/acct/99007945"}'
+  hostname: next-dev.treetracker.org
+
