@@ -1,0 +1,71 @@
+# k8s yaml to create a workspace: persistent volume, persistent volume claim, development pod, there are two pods:
+# 1. ubuntu pod with a persistent volume mounted at /mnt/data, as command line editor and server runner e.g. next
+# 2. kasm pod with a persistent volume mounted at /mnt/data, to offer desktop
+#apiVersion: v1
+#kind: PersistentVolume
+#metadata:
+#  namespace: workspace
+#  name: workspace-pv
+#  labels:
+#    type: local
+#spec:
+#  capacity:
+#    storage: 1Gi
+#  accessModes:
+#    - ReadWriteOnce
+#  hostPath: /mnt/data
+#---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: workspace
+  name: workspace-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: workspace
+  name: workspace-pod
+spec:
+  containers:
+  - name: workspace-container
+    image: ubuntu
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo hello; sleep 10;done"]
+    volumeMounts:
+    - mountPath: "/mnt/data"
+      name: workspace-volume
+  volumes:
+  - name: workspace-volume
+    persistentVolumeClaim:
+      claimName: workspace-pvc
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: workspace
+  name: kasm-pod
+spec:
+  containers:
+  - name: kasm-container
+    image: kasmweb/ubuntu-focal-desktop:1.14.0
+    # env VNC_PW=123456
+    env:
+    - name: VNC_PW
+      value: "123456"
+    volumeMounts:
+    - mountPath: "/mnt/data"
+      name: workspace-volume
+  volumes:
+  - name: workspace-volume
+    persistentVolumeClaim:
+      claimName: workspace-pvc
+
