@@ -57,6 +57,9 @@ spec:
   containers:
   - name: kasm-container
     image: kasmweb/ubuntu-focal-desktop:1.14.0
+    securityContext:
+      runAsUser: 0
+      runAsGroup: 0
     # env VNC_PW=123456
     env:
     - name: VNC_PW
