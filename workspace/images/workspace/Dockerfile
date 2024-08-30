@@ -29,6 +29,12 @@ RUN curl -L -o /root/nvim-linux64.tar.gz https://github.com/neovim/neovim/releas
   mv /root/nvim-linux64 /root/nvim && \
   ln -s /root/nvim/bin/nvim /usr/local/bin/nvim
 
+# install gh cli
+RUN curl -L -o /root/gh_2.55.0_linux_amd64.tar.gz https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz && \
+  tar -xzvf /root/gh_2.55.0_linux_amd64.tar.gz -C /root/ && \
+  mv /root/gh_2.55.0_linux_amd64 /root/gh && \
+  ln -s /root/gh/bin/gh /usr/local/bin/gh
+
 
 
 # finished building the image 
