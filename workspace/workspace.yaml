@@ -1,74 +1,186 @@
 # k8s yaml to create a workspace: persistent volume, persistent volume claim, development pod, there are two pods:
 # 1. ubuntu pod with a persistent volume mounted at /mnt/data, as command line editor and server runner e.g. next
 # 2. kasm pod with a persistent volume mounted at /mnt/data, to offer desktop
-#apiVersion: v1
-#kind: PersistentVolume
-#metadata:
-#  namespace: workspace
-#  name: workspace-pv
-#  labels:
-#    type: local
-#spec:
-#  capacity:
-#    storage: 1Gi
-#  accessModes:
-#    - ReadWriteOnce
-#  hostPath: /mnt/data
-#---
-apiVersion: v1
-kind: PersistentVolumeClaim
+
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000000
+globalDefault: false
+description: "This priority class is for important pods."
+
+
+---
+# nfs server
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   namespace: workspace
-  name: workspace-pvc
+  name: nfs-server
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-server
+  template:
+    metadata:
+      labels:
+        app: nfs-server
+    spec:
+      containers:
+      - name: nfs-server
+        image: k8s.gcr.io/volume-nfs:0.8
+        ports:
+        - name: nfs
+          containerPort: 2049
+        - name: mountd
+          containerPort: 20048
+        - name: rpcbind
+          containerPort: 111
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: storage
+            mountPath: /exports
+      volumes:
+        - name: storage
+          hostPath:
+            path: /data/nfs # store all data in "/data/nfs" directory of the node where it is running
+            type: DirectoryOrCreate # if the directory does not exist then create it
 
 ---
 apiVersion: v1
-kind: Pod
+kind: Service
+metadata:
+  name: nfs-service
+  namespace: workspace
+spec:
+  ports:
+  - name: nfs
+    port: 2049
+  - name: mountd
+    port: 20048
+  - name: rpcbind
+    port: 111
+  selector:
+    app: nfs-server # must match with the label of NFS pod
+
+---
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   namespace: workspace
   name: editor
 spec:
-  containers:
-  - name: editor-container
-    image: dadiorchen/editor:1.0
-    command: ["/bin/sh"]
-    args: ["-c", "while true; do echo hello; sleep 10;done"]
-    volumeMounts:
-    - mountPath: "/mnt/data"
-      name: workspace-volume
-  volumes:
-  - name: workspace-volume
-    persistentVolumeClaim:
-      claimName: workspace-pvc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: editor
+  template:
+    metadata:
+      labels:
+        app: editor
+    spec:
+      containers:
+      - name: editor-container
+        image: dadiorchen/editor:1.0
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do echo hello; sleep 10;done"]
+        volumeMounts:
+        - mountPath: "/mnt/data"
+          name: workspace-volume
+      volumes:
+      - name: workspace-volume
+        nfs:
+          #server: "nfs-service.workspace.svc.cluster.local"
+          server: "10.245.76.194"
+          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+      priorityClassName: high-priority
 
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   namespace: workspace
   name: desktop
 spec:
-  containers:
-  - name: desktop-container
-    image: dadiorchen/desktop:1.0
-    securityContext:
-      runAsUser: 0
-      runAsGroup: 0
-    # env VNC_PW=123456
-    env:
-    - name: VNC_PW
-      value: "Cy;{C52<48aM"
-    volumeMounts:
-    - mountPath: "/mnt/data"
-      name: workspace-volume
-  volumes:
-  - name: workspace-volume
-    persistentVolumeClaim:
-      claimName: workspace-pvc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: desktop
+  template:
+    metadata:
+      labels:
+        app: desktop
+    spec:
+      containers:
+      - name: desktop-container
+        image: dadiorchen/desktop:1.0
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+        # env VNC_PW=123456
+        env:
+        - name: VNC_PW
+          value: "Cy;{C52<48aM"
+        volumeMounts:
+        - mountPath: "/mnt/data"
+          name: workspace-volume
+      volumes:
+      - name: workspace-volume
+        nfs:
+          #server: "nfs-service.workspace.svc.cluster.local"
+          server: "10.245.76.194"
+          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: workspace
+  name: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+      - name: desktop-container
+        image: dadiorchen/editor:1.0
+        #command to run npm start
+        #        command: 
+        #          - /bin/bash
+        #          - -c
+        #          - -l
+        #          - |
+        #            cd /mnt/data
+        #            npm run dev
+        volumeMounts:
+        - mountPath: "/mnt/data"
+          name: workspace-volume
+      volumes:
+      - name: workspace-volume
+        nfs:
+          #server: "nfs-service.workspace.svc.cluster.local"
+          server: "10.245.76.194"
+          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-service
+  namespace: workspace
+spec:
+  ports:
+    - port: 3001
+      targetPort: 3001
+  selector:
+    pod: server
