@@ -86,7 +86,19 @@ spec:
       containers:
       - name: editor-container
         image: dadiorchen/editor:1.0
-        command: ["/bin/sh"]
+        command: 
+          - /bin/bash
+          - -c
+          - -l
+          - |
+            apt install -y tmux
+            sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
+              https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+            mkdir -p /root/.config
+            ln -s /mnt/data/config-nvim /root/.config/nvim
+            nvim +PlugInstall +qall
+            npm install -g typescript-language-server
+            while true; do echo hello; sleep 10;done
         args: ["-c", "while true; do echo hello; sleep 10;done"]
         volumeMounts:
         - mountPath: "/mnt/data"
@@ -118,6 +130,25 @@ spec:
       containers:
       - name: desktop-container
         image: dadiorchen/desktop:1.0
+        command: 
+          - /bin/bash
+          - --login
+          - -c
+          - |
+            # run the startup script in the background
+            export STARTUPDIR=/dockerstartup
+            source /etc/profile
+            source /root/.bashrc
+            source /home/kasm-user/.bashrc
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
+            source /root/.nvm/nvm.sh && \
+            nvm install 18 && \
+            nvm use 18 && \
+            cd /mnt/data/bluebot-saas-client/ && \
+            npx cypress install && \
+            /dockerstartup/kasm_default_profile.sh && \
+            /dockerstartup/vnc_startup.sh && \
+            /dockerstartup/kasm_startup.sh
         securityContext:
           runAsUser: 0
           runAsGroup: 0
@@ -125,6 +156,8 @@ spec:
         env:
         - name: VNC_PW
           value: "Cy;{C52<48aM"
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=2048"
         volumeMounts:
         - mountPath: "/mnt/data"
           name: workspace-volume
@@ -162,6 +195,11 @@ spec:
         #          - |
         #            cd /mnt/data
         #            npm run dev
+        
+        # set node.js memory limit
+        env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=2048"
         volumeMounts:
         - mountPath: "/mnt/data"
           name: workspace-volume
@@ -183,4 +221,4 @@ spec:
     - port: 3001
       targetPort: 3001
   selector:
-    pod: server
+    app: server
