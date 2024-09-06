@@ -75,6 +75,7 @@ metadata:
   name: editor
 spec:
   replicas: 1
+  # select node by label
   selector:
     matchLabels:
       app: editor
@@ -83,6 +84,8 @@ spec:
       labels:
         app: editor
     spec:
+      nodeSelector:
+        mylabel: core
       containers:
       - name: editor-container
         image: dadiorchen/editor:1.0
@@ -97,9 +100,13 @@ spec:
             mkdir -p /root/.config
             ln -s /mnt/data/config-nvim /root/.config/nvim
             nvim +PlugInstall +qall
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
+            source /root/.nvm/nvm.sh && \
             npm install -g typescript-language-server
-            while true; do echo hello; sleep 10;done
-        args: ["-c", "while true; do echo hello; sleep 10;done"]
+            tail -f /dev/null
+        env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=1024"
         volumeMounts:
         - mountPath: "/mnt/data"
           name: workspace-volume
@@ -127,9 +134,18 @@ spec:
       labels:
         app: desktop
     spec:
+      nodeSelector:
+        mylabel: ext
       containers:
       - name: desktop-container
         image: dadiorchen/desktop:1.0
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "3Gi"
+            cpu: "1500m"
         command: 
           - /bin/bash
           - --login
@@ -157,7 +173,7 @@ spec:
         - name: VNC_PW
           value: "Cy;{C52<48aM"
         - name: NODE_OPTIONS
-          value: "--max-old-space-size=2048"
+          value: "--max-old-space-size=1024"
         volumeMounts:
         - mountPath: "/mnt/data"
           name: workspace-volume
@@ -184,19 +200,27 @@ spec:
       labels:
         app: server
     spec:
+      #      nodeSelector:
+      #        mylabel: ext
       containers:
       - name: desktop-container
         image: dadiorchen/editor:1.0
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "3Gi"
+            cpu: "1500m"
         #command to run npm start
-        #        command: 
-        #          - /bin/bash
-        #          - -c
-        #          - -l
-        #          - |
-        #            cd /mnt/data
-        #            npm run dev
-        
-        # set node.js memory limit
+        command: 
+          - /bin/bash
+          - -c
+          - |
+            source /root/.nvm/nvm.sh
+            cd /mnt/data/bluebot-saas-client/
+            #IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
+            npm run dev -- --experimental-https
         env:
         - name: NODE_OPTIONS
           value: "--max-old-space-size=2048"
