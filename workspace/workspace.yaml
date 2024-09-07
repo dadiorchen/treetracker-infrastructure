@@ -141,11 +141,9 @@ spec:
         image: dadiorchen/desktop:1.0
         resources:
           requests:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: "1000Mi"
           limits:
-            memory: "3Gi"
-            cpu: "1500m"
+            memory: "8000Mi"
         command: 
           - /bin/bash
           - --login
@@ -200,18 +198,16 @@ spec:
       labels:
         app: server
     spec:
-      #      nodeSelector:
-      #        mylabel: ext
+      nodeSelector:
+        mylabel: ext
       containers:
       - name: desktop-container
         image: dadiorchen/editor:1.0
         resources:
           requests:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: "500Mi"
           limits:
-            memory: "3Gi"
-            cpu: "1500m"
+            memory: "4000Mi"
         #command to run npm start
         command: 
           - /bin/bash
