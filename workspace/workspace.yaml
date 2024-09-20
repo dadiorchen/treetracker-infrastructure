@@ -29,6 +29,8 @@ spec:
       labels:
         app: nfs-server
     spec:
+      nodeSelector:
+        mylabel: core
       containers:
       - name: nfs-server
         image: k8s.gcr.io/volume-nfs:0.8
@@ -89,6 +91,11 @@ spec:
       containers:
       - name: editor-container
         image: dadiorchen/editor:1.0
+        resources:
+          requests:
+            memory: "1000Mi"
+          limits:
+            memory: "4000Mi"
         command: 
           - /bin/bash
           - -c
@@ -114,7 +121,7 @@ spec:
       - name: workspace-volume
         nfs:
           #server: "nfs-service.workspace.svc.cluster.local"
-          server: "10.245.76.194"
+          server: "10.245.18.37"
           path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
       priorityClassName: high-priority
 
@@ -141,7 +148,7 @@ spec:
         image: dadiorchen/desktop:1.0
         resources:
           requests:
-            memory: "1000Mi"
+            memory: "2000Mi"
           limits:
             memory: "8000Mi"
         command: 
@@ -179,7 +186,7 @@ spec:
       - name: workspace-volume
         nfs:
           #server: "nfs-service.workspace.svc.cluster.local"
-          server: "10.245.76.194"
+          server: "10.245.18.37"
           path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
 
 ---
@@ -207,7 +214,7 @@ spec:
           requests:
             memory: "500Mi"
           limits:
-            memory: "4000Mi"
+            memory: "2000Mi"
         #command to run npm start
         command: 
           - /bin/bash
@@ -215,8 +222,8 @@ spec:
           - |
             source /root/.nvm/nvm.sh
             cd /mnt/data/bluebot-saas-client/
-            #IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
-            npm run dev -- --experimental-https
+            IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
+            #npm run dev -- --experimental-https
         env:
         - name: NODE_OPTIONS
           value: "--max-old-space-size=2048"
@@ -227,7 +234,7 @@ spec:
       - name: workspace-volume
         nfs:
           #server: "nfs-service.workspace.svc.cluster.local"
-          server: "10.245.76.194"
+          server: "10.245.18.37"
           path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
 
 ---
@@ -242,3 +249,56 @@ spec:
       targetPort: 3001
   selector:
     app: server
+
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: workspace
+  name: editor-aws
+spec:
+  replicas: 0
+  # select node by label
+  selector:
+    matchLabels:
+      app: editor-aws
+  template:
+    metadata:
+      labels:
+        app: editor-aws
+    spec:
+      nodeSelector:
+        mylabel: core
+      containers:
+      - name: editor-container
+        image: dadiorchen/editor:1.0
+        command: 
+          - /bin/bash
+          - -c
+          - -l
+          - |
+            apt install -y tmux sudo unzip
+            sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
+              https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+            mkdir -p /root/.config
+            ln -s /mnt/data/config-nvim /root/.config/nvim
+            nvim +PlugInstall +qall
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
+            source /root/.nvm/nvm.sh && \
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+            unzip awscliv2.zip && \
+            sudo ./aws/install
+            tail -f /dev/null
+        env:
+        volumeMounts:
+        - mountPath: "/mnt/data"
+          name: workspace-volume
+      volumes:
+      - name: workspace-volume
+        nfs:
+          #server: "nfs-service.workspace.svc.cluster.local"
+          server: "10.244.28.157"
+          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+      priorityClassName: high-priority
