@@ -113,7 +113,7 @@ spec:
             tail -f /dev/null
         env:
         - name: NODE_OPTIONS
-          value: "--max-old-space-size=1024"
+          value: "--max-old-space-size=2048"
         volumeMounts:
         - mountPath: "/mnt/data"
           name: workspace-volume
@@ -222,8 +222,8 @@ spec:
           - |
             source /root/.nvm/nvm.sh
             cd /mnt/data/bluebot-saas-client/
-            IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
-            #npm run dev -- --experimental-https
+            #IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
+            npm run dev -- --experimental-https
         env:
         - name: NODE_OPTIONS
           value: "--max-old-space-size=2048"
