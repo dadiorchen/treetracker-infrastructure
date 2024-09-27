@@ -101,7 +101,7 @@ spec:
           - -c
           - -l
           - |
-            apt install -y tmux
+            apt install -y tmux unzip sudo
             sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
               https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
             mkdir -p /root/.config
@@ -110,6 +110,11 @@ spec:
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
             source /root/.nvm/nvm.sh && \
             npm install -g typescript-language-server
+            # install aws cli
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+            unzip awscliv2.zip && \
+            sudo ./aws/install
+
             tail -f /dev/null
         env:
         - name: NODE_OPTIONS
