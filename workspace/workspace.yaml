@@ -11,6 +11,15 @@ value: 1000000
 globalDefault: false
 description: "This priority class is for important pods."
 
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: highest-priority
+value: 1000001
+globalDefault: false
+description: "This priority class is for most important pods."
+
 
 ---
 # nfs server
@@ -29,6 +38,7 @@ spec:
       labels:
         app: nfs-server
     spec:
+      priorityClassName: highest-priority
       nodeSelector:
         mylabel: core
       containers:
@@ -307,3 +317,51 @@ spec:
           server: "10.244.28.157"
           path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
       priorityClassName: high-priority
+
+
+# postgres
+---
+# postgres deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: workspace
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      nodeSelector:
+        mylabel: core
+      containers:
+        - name: postgres
+          image: postgres:13
+          env:
+          - name: POSTGRES_USER
+            value: "postgres"
+          - name: POSTGRES_PASSWORD
+            value: "postgres"
+          - name: POSTGRES_DB
+            value: "postgres"
+          - name: POSTGRES_HOST_AUTH_METHOD
+            value: "trust"
+
+---
+# postgres service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: workspace
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: postgres
+
