@@ -365,3 +365,44 @@ spec:
   selector:
     app: postgres
 
+---
+# postgREST Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: workspace
+  name: postgrest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgrest
+  template:
+    metadata:
+      labels:
+        app: postgrest
+    spec:
+      nodeSelector:
+        mylabel: core
+      containers:
+        - name: postgrest
+          image: postgrest/postgrest:latest
+          env:
+          - name: PGRST_DB_URI
+            value: "postgresql://postgres:postgres@postgres.workspace.svc.cluster.local:5432/thing"
+          - name: PGRST_DB_ANON_ROLE
+            value: "web_anon"
+
+---
+# postgREST service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgrest
+  namespace: workspace
+spec:
+  ports:
+    - port: 3000
+  selector:
+    app: postgrest
+
