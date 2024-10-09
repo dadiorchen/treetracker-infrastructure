@@ -211,7 +211,7 @@ metadata:
   namespace: workspace
   name: server
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: server
@@ -264,6 +264,68 @@ spec:
       targetPort: 3001
   selector:
     app: server
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: workspace
+  name: server-a-thing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-a-thing
+  template:
+    metadata:
+      labels:
+        app: server-a-thing
+    spec:
+      nodeSelector:
+        mylabel: ext
+      containers:
+      - name: desktop-container
+        image: dadiorchen/editor:1.0
+        resources:
+          requests:
+            memory: "500Mi"
+          limits:
+            memory: "2000Mi"
+        #command to run npm start
+        command: 
+          - /bin/bash
+          - -c
+          - |
+            source /root/.nvm/nvm.sh
+            cd /mnt/data/a-thing/mono/apps/web
+            #IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
+            #npm run dev -- --experimental-https
+            npm run dev 
+        env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=2048"
+        volumeMounts:
+        - mountPath: "/mnt/data"
+          name: workspace-volume
+      volumes:
+      - name: workspace-volume
+        nfs:
+          #server: "nfs-service.workspace.svc.cluster.local"
+          server: "10.245.18.37"
+          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-a-thing-service
+  namespace: workspace
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: server-a-thing
 
 
 
