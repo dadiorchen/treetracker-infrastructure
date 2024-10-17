@@ -182,6 +182,8 @@ spec:
             nvm use 18 && \
             cd /mnt/data/bluebot-saas-client/ && \
             npx cypress install && \
+            cd /mnt/data/a-thing/mono/apps/web/ && \
+            npx cypress install && \
             /dockerstartup/kasm_default_profile.sh && \
             /dockerstartup/vnc_startup.sh && \
             /dockerstartup/kasm_startup.sh
@@ -286,11 +288,6 @@ spec:
       containers:
       - name: desktop-container
         image: dadiorchen/editor:1.0
-        resources:
-          requests:
-            memory: "500Mi"
-          limits:
-            memory: "2000Mi"
         #command to run npm start
         command: 
           - /bin/bash
@@ -302,8 +299,6 @@ spec:
             #npm run dev -- --experimental-https
             npm run dev 
         env:
-        - name: NODE_OPTIONS
-          value: "--max-old-space-size=2048"
         volumeMounts:
         - mountPath: "/mnt/data"
           name: workspace-volume
@@ -326,6 +321,61 @@ spec:
       targetPort: 3000
   selector:
     app: server-a-thing
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: workspace
+  name: server-a-thing-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-a-thing-api
+  template:
+    metadata:
+      labels:
+        app: server-a-thing-api
+    spec:
+      nodeSelector:
+        mylabel: ext
+      containers:
+      - name: desktop-container
+        image: dadiorchen/editor:1.0
+        #command to run npm start
+        command: 
+          - /bin/bash
+          - -c
+          - |
+            source /root/.nvm/nvm.sh
+            cd /mnt/data/a-thing/mono/apps/server
+            #IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
+            #npm run dev -- --experimental-https
+            npx --yes ts-node index.ts
+        env:
+        volumeMounts:
+        - mountPath: "/mnt/data"
+          name: workspace-volume
+      volumes:
+      - name: workspace-volume
+        nfs:
+          #server: "nfs-service.workspace.svc.cluster.local"
+          server: "10.245.18.37"
+          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-a-thing-api-service
+  namespace: workspace
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: server-a-thing-api
 
 
 
