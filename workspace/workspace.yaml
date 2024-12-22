@@ -125,10 +125,16 @@ spec:
             unzip awscliv2.zip && \
             sudo ./aws/install
 
+            cat <<EOF >> /root/.bashrc
+            alias messageMagic='curl -s --form "token=ae2atxr3du9okhqrxk5p7nxgv2rumu" --form "user=uugk4p2q2d9kkoythf4t3dhbqiwofn" --form "message=test ok" --form "sound=magic" https://api.pushover.net/1/messages.json'
+            alias messageFail='curl -s --form "token=ae2atxr3du9okhqrxk5p7nxgv2rumu" --form "user=uugk4p2q2d9kkoythf4t3dhbqiwofn" --form "message=test ok" --form "sound=falling" https://api.pushover.net/1/messages.json'
+            alias ok='echo ok! && messageMagic || messageFail'
+            EOF
+
             tail -f /dev/null
         env:
         - name: NODE_OPTIONS
-          value: "--max-old-space-size=2048"
+          value: "--max-old-space-size=4096"
         volumeMounts:
         - mountPath: "/mnt/data"
           name: workspace-volume
@@ -213,7 +219,7 @@ metadata:
   namespace: workspace
   name: server
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: server
@@ -274,7 +280,7 @@ metadata:
   namespace: workspace
   name: server-a-thing
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: server-a-thing
@@ -329,7 +335,7 @@ metadata:
   namespace: workspace
   name: server-a-thing-api
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: server-a-thing-api
@@ -440,7 +446,7 @@ metadata:
   namespace: workspace
   name: postgres
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: postgres
@@ -485,7 +491,7 @@ metadata:
   namespace: workspace
   name: postgrest
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: postgrest
