@@ -97,15 +97,15 @@ spec:
         app: editor
     spec:
       nodeSelector:
-        mylabel: core
+        mylabel: ext
       containers:
       - name: editor-container
         image: dadiorchen/editor:1.0
         resources:
           requests:
-            memory: "1000Mi"
+            memory: "5000Mi"
           limits:
-            memory: "4000Mi"
+            memory: "8000Mi"
         command: 
           - /bin/bash
           - -c
@@ -171,7 +171,7 @@ spec:
           requests:
             memory: "2000Mi"
           limits:
-            memory: "8000Mi"
+            memory: "10000Mi"
         command: 
           - /bin/bash
           - --login
@@ -523,4 +523,56 @@ spec:
     - port: 3000
   selector:
     app: postgrest
+
+
+---
+# DaemonSet to set up swap
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: swap-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: swap
+  template:
+    metadata:
+      labels:
+        app: swap
+    spec:
+      containers:
+      - name: swap-container
+        image: ubuntu
+        command: ["/bin/sh", "-c"]
+        args: 
+          - |
+            echo 'set up swap'
+            swapoff /root/swapfile
+            rm /root/swapfile
+            #truncate -s 0 /swapfile
+            #chattr +C /swapfile
+            fallocate -l 16G /root/swapfile
+            #dd if=/dev/zero of=/swapfile bs=1M count=4096
+            echo $?
+            ls -l /root
+            sleep 10
+            chmod 600 /root/swapfile
+            mkswap /root/swapfile
+            echo $?
+            sleep 10
+            swapon /root/swapfile
+            swapon --show
+            sysctl vm.swappiness=100
+            cat /proc/sys/vm/swappiness
+            tail -f /dev/null
+        securityContext:
+          privileged: true  # Run in privileged mode
+        volumeMounts:
+        - mountPath: /root
+          name: my-host-path
+      volumes:
+      - name: my-host-path
+        hostPath:
+          path: /root
+      hostPID: true  # Use the host's PID namespace
 
