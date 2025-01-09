@@ -93,6 +93,7 @@ spec:
     - ReadWriteMany
   nfs:
     server: nfs-service.workspace.svc.cluster.local
+    #server: "10.245.18.37"
     path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
   persistentVolumeReclaimPolicy: Retain
 
@@ -172,16 +173,12 @@ spec:
         volumeMounts:
         - mountPath: "/mnt/data"
           name: workspace-volume
-          #      volumes:
-          #      - name: workspace-volume
-          #        nfs:
-          #          #server: "nfs-service.workspace.svc.cluster.local"
-          #          server: "10.245.18.37"
-          #          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
       volumes:
       - name: workspace-volume
-        persistentVolumeClaim:
-          claimName: nfs-pvc
+        nfs:
+          #server: "nfs-service.workspace.svc.cluster.local"
+          server: "10.245.18.37"
+          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
       priorityClassName: high-priority
 
 ---
@@ -614,4 +611,27 @@ spec:
           path: /root
       hostPID: true  # Use the host's PID namespace
 
+
+--- 
+# deploy a test pod for nfs volume mount
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+  namespace: workspace
+spec:
+  containers:
+  - name: test-container
+    image: ubuntu
+    command: ["/bin/bash", "-c"]
+    args: 
+      - |
+        tail -f /dev/null
+    volumeMounts:
+    - mountPath: "/mnt/data"
+      name: workspace-volume
+  volumes:
+  - name: workspace-volume
+    persistentVolumeClaim:
+      claimName: nfs-pvc
 
