@@ -92,9 +92,12 @@ spec:
   accessModes:
     - ReadWriteMany
   nfs:
-    server: nfs-service.workspace.svc.cluster.local
-    #server: "10.245.18.37"
+    #server: nfs-service
+    server: "10.245.18.37"
     path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+  mountOptions:
+    #- noac
+    #- actimeo=0
   persistentVolumeReclaimPolicy: Retain
 
 ---
@@ -151,6 +154,8 @@ spec:
               https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
             mkdir -p /root/.config
             ln -s /mnt/data/config-nvim /root/.config/nvim
+            ln -s /mnt/data/gh /root/.config/gh
+            ln -s /mnt/data/github-copilot /root/.config/github-copilot
             nvim +PlugInstall +qall
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
             source /root/.nvm/nvm.sh && \
@@ -174,11 +179,9 @@ spec:
         - mountPath: "/mnt/data"
           name: workspace-volume
       volumes:
-      - name: workspace-volume
-        nfs:
-          #server: "nfs-service.workspace.svc.cluster.local"
-          server: "10.245.18.37"
-          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+        - name: workspace-volume
+          persistentVolumeClaim:
+            claimName: nfs-pvc
       priorityClassName: high-priority
 
 ---
@@ -241,11 +244,9 @@ spec:
         - mountPath: "/mnt/data"
           name: workspace-volume
       volumes:
-      - name: workspace-volume
-        nfs:
-          #server: "nfs-service.workspace.svc.cluster.local"
-          server: "10.245.18.37"
-          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+        - name: workspace-volume
+          persistentVolumeClaim:
+            claimName: nfs-pvc
 
 ---
 apiVersion: apps/v1
@@ -280,7 +281,7 @@ spec:
           - |
             source /root/.nvm/nvm.sh
             cd /mnt/data/bluebot-saas-client/
-            #IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
+            IS_CYPRESS_TEST=true IS_CYPRESS_INT_TEST=true npm run dev -- --experimental-https
             npm run dev -- --experimental-https
         env:
         - name: NODE_OPTIONS
@@ -289,11 +290,9 @@ spec:
         - mountPath: "/mnt/data"
           name: workspace-volume
       volumes:
-      - name: workspace-volume
-        nfs:
-          #server: "nfs-service.workspace.svc.cluster.local"
-          server: "10.245.18.37"
-          path: "/nfs-direct" # "nfs-direct" folder must exist inside "/exports" directory of NFS server
+        - name: workspace-volume
+          persistentVolumeClaim:
+            claimName: nfs-pvc
 
 ---
 apiVersion: v1
@@ -610,28 +609,3 @@ spec:
         hostPath:
           path: /root
       hostPID: true  # Use the host's PID namespace
-
-
---- 
-# deploy a test pod for nfs volume mount
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-pod
-  namespace: workspace
-spec:
-  containers:
-  - name: test-container
-    image: ubuntu
-    command: ["/bin/bash", "-c"]
-    args: 
-      - |
-        tail -f /dev/null
-    volumeMounts:
-    - mountPath: "/mnt/data"
-      name: workspace-volume
-  volumes:
-  - name: workspace-volume
-    persistentVolumeClaim:
-      claimName: nfs-pvc
-
