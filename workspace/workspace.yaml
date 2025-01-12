@@ -172,6 +172,13 @@ spec:
             alias ok='echo ok! && messageMagic || messageFail'
             EOF
 
+            # install kubectl 
+            apt-get update && \
+            apt-get install -y curl apt-transport-https && \
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+            chmod +x ./kubectl && \
+            mv ./kubectl /usr/local/bin/kubectl && \
+
             tail -f /dev/null
         env:
         - name: NODE_OPTIONS
@@ -610,3 +617,35 @@ spec:
         hostPath:
           path: /root
       hostPID: true  # Use the host's PID namespace
+
+---
+# permission
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: workspace
+  name: exec-role
+rules:
+- apiGroups: ["", "apps"]
+  resources: ["pods", "deployments"]
+  verbs: ["get", "list", "exec"]
+- apiGroups: ["", "apps"]
+  resources: ["pods/exec", "deployments/exec"]
+  verbs: ["create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: exec-role-binding
+  namespace: workspace
+subjects:
+- kind: ServiceAccount
+  name: default  # Use the default service account or create a new one
+  namespace: workspace
+roleRef:
+  kind: Role
+  name: exec-role
+  apiGroup: rbac.authorization.k8s.io
+
+
