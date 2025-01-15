@@ -179,6 +179,11 @@ spec:
             chmod +x ./kubectl && \
             mv ./kubectl /usr/local/bin/kubectl && \
 
+            # shell
+            cat <<EOF >> /root/.bashrc
+            source '/mnt/data/dadior-shell-config/aliases.sh'
+            EOF
+
             tail -f /dev/null
         env:
         - name: NODE_OPTIONS
