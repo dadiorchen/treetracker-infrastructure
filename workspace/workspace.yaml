@@ -201,6 +201,8 @@ spec:
 
             apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+            #psql
+            apt-get install -y postgresql-client
 
             tail -f /dev/null
         env:
