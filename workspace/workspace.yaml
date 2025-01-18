@@ -157,6 +157,7 @@ spec:
             ln -s /mnt/data/gh /root/.config/gh
             ln -s /mnt/data/github-copilot /root/.config/github-copilot
             ln -s /mnt/data/.gitconfig /root/.gitconfig
+            ls -s /mnt/data/.aws /root/.aws
             nvim +PlugInstall +qall
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
             source /root/.nvm/nvm.sh && \
