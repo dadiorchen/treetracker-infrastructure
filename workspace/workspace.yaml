@@ -138,6 +138,8 @@ spec:
         mylabel: ext
       containers:
       - name: editor-container
+        securityContext:
+          privileged: true  # Run in privileged mode
         image: dadiorchen/editor:1.0
         resources:
           requests:
@@ -157,7 +159,7 @@ spec:
             ln -s /mnt/data/gh /root/.config/gh
             ln -s /mnt/data/github-copilot /root/.config/github-copilot
             ln -s /mnt/data/.gitconfig /root/.gitconfig
-            ls -s /mnt/data/.aws /root/.aws
+            ln -s /mnt/data/.aws /root/.aws
             nvim +PlugInstall +qall
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
             source /root/.nvm/nvm.sh && \
@@ -680,3 +682,44 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 
+# timescale 
+---
+# postgres deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: workspace
+  name: timescale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timescale
+  template:
+    metadata:
+      labels:
+        app: timescale
+    spec:
+      nodeSelector:
+        mylabel: ext
+      containers:
+        - name: timescale
+          image: timescale/timescaledb:2.4.2-pg13
+          env:
+          - name: POSTGRES_USER
+            value: "postgres"
+          - name: POSTGRES_PASSWORD
+            value: "postgres"
+
+---
+# postgres service
+apiVersion: v1
+kind: Service
+metadata:
+  name: timescale
+  namespace: workspace
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: timescale
