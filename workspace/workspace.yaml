@@ -151,16 +151,18 @@ spec:
           - -c
           - -l
           - |
-            apt install -y tmux unzip sudo build-essential
+            apt install -y tmux unzip sudo
             sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
               https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
             mkdir -p /root/.config
-            ln -s /mnt/data/config-nvim /root/.config/nvim
+            ln -s /mnt/data/nvim-config-next /root/.config/nvim
             ln -s /mnt/data/gh /root/.config/gh
             ln -s /mnt/data/github-copilot /root/.config/github-copilot
             ln -s /mnt/data/.gitconfig /root/.gitconfig
             ln -s /mnt/data/.aws /root/.aws
-            ln -s /mnt/data/.bashrc /root/.bashrc
+            ln -s /mnt/data/.tmux.conf /root/.tmux.conf
+            ln -s /mnt/data/.ssh /root/.ssh
+            
             nvim +PlugInstall +qall
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
             source /root/.nvm/nvm.sh && \
@@ -169,12 +171,6 @@ spec:
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
             unzip awscliv2.zip && \
             sudo ./aws/install
-
-            cat <<EOF >> /root/.bashrc
-            alias messageMagic='curl -s --form "token=ae2atxr3du9okhqrxk5p7nxgv2rumu" --form "user=uugk4p2q2d9kkoythf4t3dhbqiwofn" --form "message=test ok" --form "sound=magic" https://api.pushover.net/1/messages.json'
-            alias messageFail='curl -s --form "token=ae2atxr3du9okhqrxk5p7nxgv2rumu" --form "user=uugk4p2q2d9kkoythf4t3dhbqiwofn" --form "message=test ok" --form "sound=falling" https://api.pushover.net/1/messages.json'
-            alias ok='echo ok! && messageMagic || messageFail'
-            EOF
 
             # install kubectl 
             apt-get update && \
@@ -186,6 +182,7 @@ spec:
             # shell
             cat <<EOF >> /root/.bashrc
             source '/mnt/data/dadior-shell-config/aliases.sh'
+            source '/mnt/data/dadior-shell-config/.bashrc'
             EOF
 
             # docker
@@ -208,6 +205,10 @@ spec:
             #psql
             apt-get install -y postgresql-client
 
+            #gcc for compiling
+            apt-get install -y gcc
+
+            echo "finished, starting the editor..."
             tail -f /dev/null
         env:
         - name: NODE_OPTIONS
@@ -438,6 +439,8 @@ spec:
         mylabel: ext
       containers:
       - name: desktop-container
+        securityContext:
+          privileged: true  # Run in privileged mode
         image: dadiorchen/desktop:1.0
         resources:
           requests:
